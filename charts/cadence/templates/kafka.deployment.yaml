@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{ .Release.Name }}-kafka'
+  labels:
+    katenary.io/component: kafka
+    katenary.io/project: '{{ .Chart.Name }}'
+    katenary.io/release: '{{ .Release.Name }}'
+  annotations:
+    katenary.io/docker-compose-sha1: da39a3ee5e6b4b0d3255bfef95601890afd80709
+    katenary.io/version: 2.0.0-beta2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      katenary.io/component: kafka
+      katenary.io/release: '{{ .Release.Name }}'
+  template:
+    metadata:
+      labels:
+        katenary.io/component: kafka
+        katenary.io/release: '{{ .Release.Name }}'
+    spec:
+      initContainers:
+        - name: check-zookeeper
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |-
+              OK=0
+              echo "Checking zookeeper port"
+              while [ $OK != 1 ]; do
+                  echo -n "."
+                  nc -z {{ .Release.Name }}-zookeeper 2181 2>&1 >/dev/null && OK=1 || sleep 1
+              done
+              echo
+              echo "Done"
+      containers:
+        - name: kafka
+          image: '{{ .Values.kafka.repository.image }}{{ if ne .Values.kafka.repository.tag "" }}:{{ .Values.kafka.repository.tag }}{{ end }}'
+          ports:
+            - name: kafka
+              containerPort: 9092
+          env:
+            - name: KAFKA_ZOOKEEPER_CONNECT
+              value: '{{ tpl .Values.kafka.environment.KAFKA_ZOOKEEPER_CONNECT . }}'
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: '{{ tpl .Values.kafka.environment.KAFKA_ADVERTISED_LISTENERS . }}'
+            - name: KAFKA_LISTENERS
+              value: '{{ tpl .Values.kafka.environment.KAFKA_LISTENERS . }}'
+

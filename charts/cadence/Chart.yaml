@@ -1,0 +1,8 @@
+# Create on 2023-08-09T02:50:27Z
+# Katenary command line: katenary convert -c docker-compose/docker-compose-es-v7.yml -o ./charts
+apiVersion: v2
+appVersion: 0.0.1
+description: A helm chart for cadence
+name: cadence
+type: application
+version: 0.1.0

@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{ .Release.Name }}-cadence'
+  labels:
+    katenary.io/component: cadence
+    katenary.io/project: '{{ .Chart.Name }}'
+    katenary.io/release: '{{ .Release.Name }}'
+  annotations:
+    katenary.io/docker-compose-sha1: da39a3ee5e6b4b0d3255bfef95601890afd80709
+    katenary.io/version: 2.0.0-beta2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      katenary.io/component: cadence
+      katenary.io/release: '{{ .Release.Name }}'
+  template:
+    metadata:
+      labels:
+        katenary.io/component: cadence
+        katenary.io/release: '{{ .Release.Name }}'
+    spec:
+      initContainers:
+        - name: check-cassandra
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |-
+              OK=0
+              echo "Checking cassandra port"
+              while [ $OK != 1 ]; do
+                  echo -n "."
+                  nc -z {{ .Release.Name }}-cassandra 9042 2>&1 >/dev/null && OK=1 || sleep 1
+              done
+              echo
+              echo "Done"
+        - name: check-prometheus
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |-
+              OK=0
+              echo "Checking prometheus port"
+              while [ $OK != 1 ]; do
+                  echo -n "."
+                  nc -z {{ .Release.Name }}-prometheus 9090 2>&1 >/dev/null && OK=1 || sleep 1
+              done
+              echo
+              echo "Done"
+        - name: check-kafka
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |-
+              OK=0
+              echo "Checking kafka port"
+              while [ $OK != 1 ]; do
+                  echo -n "."
+                  nc -z {{ .Release.Name }}-kafka 9092 2>&1 >/dev/null && OK=1 || sleep 1
+              done
+              echo
+              echo "Done"
+        - name: check-elasticsearch
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |-
+              OK=0
+              echo "Checking elasticsearch port"
+              while [ $OK != 1 ]; do
+                  echo -n "."
+                  nc -z {{ .Release.Name }}-elasticsearch 9200 2>&1 >/dev/null && OK=1 || sleep 1
+              done
+              echo
+              echo "Done"
+      containers:
+        - name: cadence
+          image: '{{ .Values.cadence.repository.image }}{{ if ne .Values.cadence.repository.tag "" }}:{{ .Values.cadence.repository.tag }}{{ end }}'
+          ports:
+            - name: cadence
+              containerPort: 8000
+            - name: cadence-8001
+              containerPort: 8001
+            - name: cadence-8002
+              containerPort: 8002
+            - name: cadence-8003
+              containerPort: 8003
+            - name: cadence-7933
+              containerPort: 7933
+            - name: cadence-7934
+              containerPort: 7934
+            - name: cadence-7935
+              containerPort: 7935
+            - name: cadence-7939
+              containerPort: 7939
+            - name: cadence-7833
+              containerPort: 7833
+          env:
+            - name: ES_VERSION
+              value: '{{ tpl .Values.cadence.environment.ES_VERSION . }}'
+            - name: KAFKA_SEEDS
+              value: '{{ tpl .Values.cadence.environment.KAFKA_SEEDS . }}'
+            - name: PROMETHEUS_ENDPOINT_2
+              value: '{{ tpl .Values.cadence.environment.PROMETHEUS_ENDPOINT_2 . }}'
+            - name: CASSANDRA_SEEDS
+              value: '{{ tpl .Values.cadence.environment.CASSANDRA_SEEDS . }}'
+            - name: PROMETHEUS_ENDPOINT_1
+              value: '{{ tpl .Values.cadence.environment.PROMETHEUS_ENDPOINT_1 . }}'
+            - name: ES_SEEDS
+              value: '{{ tpl .Values.cadence.environment.ES_SEEDS . }}'
+            - name: PROMETHEUS_ENDPOINT_3
+              value: '{{ tpl .Values.cadence.environment.PROMETHEUS_ENDPOINT_3 . }}'
+            - name: ENABLE_ES
+              value: '{{ tpl .Values.cadence.environment.ENABLE_ES . }}'
+            - name: DYNAMIC_CONFIG_FILE_PATH
+              value: '{{ tpl .Values.cadence.environment.DYNAMIC_CONFIG_FILE_PATH . }}'
+            - name: PROMETHEUS_ENDPOINT_0
+              value: '{{ tpl .Values.cadence.environment.PROMETHEUS_ENDPOINT_0 . }}'
+

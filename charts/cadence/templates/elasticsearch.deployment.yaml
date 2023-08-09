@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{ .Release.Name }}-elasticsearch'
+  labels:
+    katenary.io/component: elasticsearch
+    katenary.io/project: '{{ .Chart.Name }}'
+    katenary.io/release: '{{ .Release.Name }}'
+  annotations:
+    katenary.io/docker-compose-sha1: da39a3ee5e6b4b0d3255bfef95601890afd80709
+    katenary.io/version: 2.0.0-beta2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      katenary.io/component: elasticsearch
+      katenary.io/release: '{{ .Release.Name }}'
+  template:
+    metadata:
+      labels:
+        katenary.io/component: elasticsearch
+        katenary.io/release: '{{ .Release.Name }}'
+    spec:
+      containers:
+        - name: elasticsearch
+          image: '{{ .Values.elasticsearch.repository.image }}{{ if ne .Values.elasticsearch.repository.tag "" }}:{{ .Values.elasticsearch.repository.tag }}{{ end }}'
+          ports:
+            - name: elasticsearch
+              containerPort: 9200
+          env:
+            - name: discovery.type
+              value: '{{ tpl .Values.elasticsearch.environment.discovery.type . }}'
+
